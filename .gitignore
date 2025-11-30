@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+env/
+venv/
+
+# VS Code
+.vscode/
+
+# Logs and Output
+*.log
+output.txt
+output_log.txt
+output_log_2.txt
+
+# Generated Reports
+grade_horaria.html
