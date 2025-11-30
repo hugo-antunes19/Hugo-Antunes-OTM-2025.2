@@ -143,7 +143,7 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
             # semestre[d] >= 1 - ...  (Verdade, pois semestre[d] >= 1 se cursada)
             
             solver.Add(sem_d - sem_pre >= 1 - M_prereq * (1 - var_d))
-
+            
 
     # R5: Conflitos de Horário (Linear)
     for s in range(1, NUM_SEMESTRES + 1):
@@ -222,6 +222,8 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
     solver.Minimize(semestre_maximo)
 
     # --- 6. Chamar o Solver ---
+    print(f"Número de variáveis: {solver.NumVariables()}")
+    print(f"Número de restrições: {solver.NumConstraints()}")
     solver.set_time_limit(300 * 1000) 
     status = solver.Solve()
     

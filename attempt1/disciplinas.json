@@ -122,7 +122,7 @@
     "nome": "Física III - a",
     "creditos": 4.0,
     "prerequisitos": [
-      "FIT112",
+      "FIT122",
       "MAC128"
     ],
     "tipo": "3º Período"
