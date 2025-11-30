@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otimizador de Grade Horária</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .action-btn {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #f1f5f9;
+            color: var(--text);
+        }
+
+        .course-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .course-group-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+            z-index: 10;
+        }
+
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .course-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .course-item:hover {
+            background-color: #f8fafc;
+            border-color: var(--primary);
+        }
+
+        .course-item.selected {
+            background-color: #eff6ff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        .course-item.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .course-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .course-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .course-code {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.9rem;
+            background: #dbeafe;
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.25rem;
+        }
+
+        .course-name {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .course-meta {
+            font-size: 0.8rem;
+            color: #64748b;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Schedule Table Styles */
+        .schedule-table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 600px;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        .schedule-table th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .schedule-cell {
+            background-color: #dbeafe;
+            color: var(--primary);
+            font-weight: 600;
+            border-radius: 0.25rem;
+            padding: 0.25rem;
+            font-size: 0.75rem;
+        }
+
+        .summary-card {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-title {
+            color: #166534;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .action-btn {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #f1f5f9;
+            color: var(--text);
+        }
+
+        .course-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .course-group-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+            z-index: 10;
+        }
+
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .course-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .course-item:hover {
+            background-color: #f8fafc;
+            border-color: var(--primary);
+        }
+
+        .course-item.selected {
+            background-color: #eff6ff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        .course-item.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .course-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .course-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .course-code {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.9rem;
+            background: #dbeafe;
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.25rem;
+        }
+
+        .course-name {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .course-meta {
+            font-size: 0.8rem;
+            color: #64748b;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Schedule Table Styles */
+        .schedule-table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 600px;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        .schedule-table th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .schedule-cell {
+            background-color: #dbeafe;
+            color: var(--primary);
+            font-weight: 600;
+            border-radius: 0.25rem;
+            padding: 0.25rem;
+            font-size: 0.75rem;
+        }
+
+        .summary-card {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-title {
+            color: #166534;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .period-btn {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #475569;
+            transition: all 0.2s;
+        }
+
+        .period-btn:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .summary-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #bbf7d0;
+        }
+
+        .summary-label {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #166534;
+        }
+
+        /* Schedule Styles */
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .semester-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+
+        .semester-title {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .schedule-item {
+            background: #f8fafc;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--primary);
+        }
+
+        .loading,
+        .error {
+            text-align: center;
+            padding: 2rem;
+            display: none;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .loading {
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎓 Otimizador de Grade Horária</h1>
+
+        <div class="card">
+            <h2>1. Selecione as disciplinas já cursadas</h2>
+            <p style="color: #64748b; margin-bottom: 1.5rem;">
+                Marque todas as disciplinas que você já concluiu. Elas serão usadas para calcular os pré-requisitos.
+            </p>
+
+            <div class="actions-bar">
+                <input type="text" class="search-box" placeholder="🔍 Buscar por nome ou código..." id="searchBox">
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="action-btn" onclick="selectAllVisible()">Selecionar Visíveis</button>
+                    <button class="action-btn" onclick="deselectAllVisible()">Desmarcar Visíveis</button>
+                </div>
+            </div>
+
+            <!-- Quick Select by Period -->
+            <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 0.9rem; color: #64748b; font-weight: 600;">Seleção Rápida por Período:</span>
+                <button class="period-btn" onclick="selectByPeriod('1º')">1º</button>
+                <button class="period-btn" onclick="selectByPeriod('2º')">2º</button>
+                <button class="period-btn" onclick="selectByPeriod('3º')">3º</button>
+                <button class="period-btn" onclick="selectByPeriod('4º')">4º</button>
+                <button class="period-btn" onclick="selectByPeriod('5º')">5º</button>
+                <button class="period-btn" onclick="selectByPeriod('6º')">6º</button>
+                <button class="period-btn" onclick="selectByPeriod('7º')">7º</button>
+                <button class="period-btn" onclick="selectByPeriod('8º')">8º</button>
+                <button class="period-btn" onclick="selectByPeriod('9º')">9º</button>
+                <button class="period-btn" style="background: #fee2e2; color: #ef4444; border-color: #fecaca;"
+                    onclick="clearSelection()">Limpar Tudo</button>
+            </div>
+
+            <div class="course-list" id="courseList">
+                <div style="padding: 2rem; text-align: center;">Carregando disciplinas...</div>
+            </div>
+
+            <div style="margin-top: 1rem; text-align: right; color: #64748b; font-weight: 500;">
+                <span id="selectedCount" style="color: var(--primary); font-weight: 700;">0</span> disciplinas
+                selecionadas
+            </div>
+        </div>
+
+        <button class="btn-primary" id="generateBtn" onclick="generateSchedule()">Gerar Grade Otimizada ✨</button>
+
+        <div id="loading" class="loading">
+            ⏳ Otimizando sua grade... Isso pode levar alguns segundos.
+        </div>
+
+        <div id="error" class="error"></div>
+
+        <div id="results" style="margin-top: 3rem; display: none;">
+            <h2>📅 Sua Grade Sugerida</h2>
+
+            <div class="summary-card" id="creditsSummary">
+                <div class="summary-title">📊 Resumo de Créditos (Cursados + Planejados)</div>
+                <div class="summary-grid" id="summaryGrid"></div>
+            </div>
+
+            <p id="resultSummary" style="margin-bottom: 2rem; color: #64748b;"></p>
+            <div class="schedule-grid" id="scheduleGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        let allCourses = [];
+        let selectedCourses = new Set();
+        let currentVisibleCourses = [];
+
+        // Fetch courses on load
+        fetch('/disciplinas')
+            .then(response => response.json())
+            .then(data => {
+                // Sort: Obrigatórias first, then by name
+                allCourses = data.sort((a, b) => {
+                    if (a.tipo.includes('Obrigatória') && !b.tipo.includes('Obrigatória')) return -1;
+                    if (!a.tipo.includes('Obrigatória') && b.tipo.includes('Obrigatória')) return 1;
+                    return a.nome.localeCompare(b.nome);
+                });
+                renderCourses(allCourses);
+            })
+            .catch(err => {
+                document.getElementById('courseList').innerHTML =
+                    '<div style="color: red; text-align: center;">Erro ao carregar disciplinas. Backend offline?</div>';
+            });
+
+        // Search
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allCourses.filter(c =>
+                c.nome.toLowerCase().includes(term) ||
+                c.id.toLowerCase().includes(term)
+            );
+            renderCourses(filtered);
+        });
+
+        function renderCourses(courses) {
+            currentVisibleCourses = courses;
+            const container = document.getElementById('courseList');
+            container.innerHTML = '';
+
+            if (courses.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color: #94a3b8; padding: 2rem;">Nenhuma disciplina encontrada.</div>';
+                return;
+            }
+
+            // Group by Type
+            const groups = {};
+            courses.forEach(c => {
+                const type = c.tipo || 'Outros';
+                if (!groups[type]) groups[type] = [];
+                groups[type].push(c);
+            });
+
+            // Render Groups
+            Object.keys(groups).sort().forEach(type => {
+                const groupDiv = document.createElement('div');
+
+                const title = document.createElement('div');
+                title.className = 'course-group-title';
+                title.textContent = type;
+                groupDiv.appendChild(title);
+
+                const grid = document.createElement('div');
+                grid.className = 'course-grid';
+
+                groups[type].forEach(course => {
+                    const item = document.createElement('div');
+                    item.className = `course-item ${selectedCourses.has(course.id) ? 'selected' : ''}`;
+                    item.onclick = () => toggleCourse(course.id, item);
+                    item.innerHTML = `
+                        <div class="course-info">
+                            <div class="course-header">
+                                <span class="course-code">${course.id}</span>
+                                <span class="course-name">${course.nome}</span>
+                            </div>
+                            <div class="course-meta">
+                                ${course.creditos} créditos
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(item);
+                });
+
+                groupDiv.appendChild(grid);
+                container.appendChild(groupDiv);
+            });
+        }
+
+        function toggleCourse(id, element) {
+            if (selectedCourses.has(id)) {
+                selectedCourses.delete(id);
+                element.classList.remove('selected');
+            } else {
+                selectedCourses.add(id);
+                element.classList.add('selected');
+            }
+            updateCount();
+        }
+
+        function selectAllVisible() {
+            currentVisibleCourses.forEach(c => selectedCourses.add(c.id));
+            renderCourses(currentVisibleCourses); // Re-render to update UI
+            updateCount();
+        }
+
+        function deselectAllVisible() {
+            currentVisibleCourses.forEach(c => selectedCourses.delete(c.id));
+            renderCourses(currentVisibleCourses); // Re-render to update UI
+            updateCount();
+        }
+
+        function selectByPeriod(period) {
+            allCourses.forEach(c => {
+                if (c.tipo && c.tipo.includes(period)) {
+                    selectedCourses.add(c.id);
+                }
+            });
+            renderCourses(currentVisibleCourses); // Re-render to update UI
+            updateCount();
+        }
+
+        function clearSelection() {
+            selectedCourses.clear();
+            renderCourses(currentVisibleCourses); // Re-render to update UI
+            updateCount();
+        }
+
+        function updateCount() {
+            document.getElementById('selectedCount').textContent = selectedCourses.size;
+        }
+
+        async function generateSchedule() {
+            const btn = document.getElementById('generateBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('error');
+
+            btn.disabled = true;
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+
+            try {
+                const response = await fetch('/optimize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        taken_courses: Array.from(selectedCourses)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    renderSchedule(data);
+                    renderSummary(data.credits_summary);
+                } else {
+                    throw new Error(data.message || 'Erro desconhecido');
+                }
+            } catch (err) {
+                error.textContent = `Erro: ${err.message}`;
+                error.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        function renderSummary(summary) {
+            const container = document.getElementById('summaryGrid');
+            container.innerHTML = '';
+
+            const limits = {
+                "Obrigatória": "Todos",
+                "Escolha Restrita": "Min 4",
+                "Escolha Condicionada": "Min 40",
+                "Livre Escolha": "Min 8"
+            };
+
+            for (const [type, value] of Object.entries(summary)) {
+                const div = document.createElement('div');
+                div.className = 'summary-item';
+                div.innerHTML = `
+                    <div class="summary-label">${type}</div>
+                    <div class="summary-value">${value} <span style="font-size: 0.8rem; font-weight: normal; color: #64748b;">(${limits[type] || '-'})</span></div>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function renderSchedule(data) {
+            const grid = document.getElementById('scheduleGrid');
+            grid.innerHTML = '';
+
+            document.getElementById('resultSummary').textContent =
+                `Solução encontrada! Duração estimada: ${data.semestres} semestres.`;
+
+            data.schedule.forEach(sem => {
+                if (sem.disciplinas.length === 0) return;
+
+                const card = document.createElement('div');
+                card.className = 'semester-card';
+
+                // Header
+                let html = `
+                    <div class="semester-title">
+                        Semestre ${sem.semestre}
+                        <span class="semester-credits">${sem.creditos} créditos</span>
+                    </div>
+                `;
+
+                // List View
+                html += `<div style="margin-bottom: 1rem;">`;
+                sem.disciplinas.forEach(d => {
+                    html += `<div class="schedule-item">
+                        <strong>${d.id}</strong> - ${d.nome} (${d.turma})
+                    </div>`;
+                });
+                html += `</div>`;
+
+                // Table View
+                html += generateWeeklyTable(sem.disciplinas);
+
+                card.innerHTML = html;
+                grid.appendChild(card);
+            });
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function generateWeeklyTable(disciplinas) {
+            const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+            const hours = [
+                '08:00', '09:00', '10:00', '11:00', '12:00',
+                '13:00', '14:00', '15:00', '16:00', '17:00',
+                '18:00', '19:00', '20:00', '21:00', '22:00'
+            ];
+
+            // Create empty grid
+            const grid = {}; // key: "day-hour" -> content
+
+            disciplinas.forEach(d => {
+                d.horarios.forEach(h => {
+                    // Try parsing "SEG-13-15" format
+                    const match = h.match(/([A-Z]{3})-(\d{2})-(\d{2})/);
+                    if (match) {
+                        const dayStr = match[1];
+                        const startHour = parseInt(match[2]);
+                        const endHour = parseInt(match[3]);
+
+                        const dayMap = { 'SEG': 0, 'TER': 1, 'QUA': 2, 'QUI': 3, 'SEX': 4, 'SAB': 5 };
+                        const dayIdx = dayMap[dayStr];
+
+                        if (dayIdx !== undefined) {
+                            for (let hour = startHour; hour < endHour; hour++) {
+                                // Format hour as "08:00", "13:00"
+                                const hourStr = hour.toString().padStart(2, '0') + ":00";
+                                const key = `${dayIdx}-${hourStr}`;
+                                grid[key] = d.id;
+                            }
+                        }
+                    } else {
+                        console.warn('Formato de horário desconhecido:', h);
+                    }
+                });
+            });
+
+            let tableHtml = `<div class="schedule-table-container"><table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>Horário</th>
+                        ${days.map(d => `<th>${d}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            hours.forEach(h => {
+                tableHtml += `<tr>
+                    <td style="font-weight:bold; background:#f8fafc;">${h}</td>`;
+
+                for (let d = 0; d < 6; d++) {
+                    const key = `${d}-${h}`;
+                    const content = grid[key] ? `<div class="schedule-cell">${grid[key]}</div>` : '';
+                    tableHtml += `<td>${content}</td>`;
+                }
+
+                tableHtml += `</tr>`;
+            });
+
+            tableHtml += `</tbody></table></div>`;
+            return tableHtml;
+        }
+    </script>
+</body>
+
+</html>
+```

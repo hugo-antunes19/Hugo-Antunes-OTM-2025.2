@@ -359,18 +359,32 @@
     "tipo": "9º Período"
   },
   {
-    "id": "ARTIFICIAL01",
+    "id": "ARTIFICIAL_2H",
     "nome": "Escolha Livre",
-    "creditos": 4.0,
+    "creditos": 2.0,
     "prerequisitos": [],
-    "tipo": "10º Período"
+    "tipo": "Escolha Livre"
   },
   {
-    "id": "ARTIFICIAL02",
+    "id": "ARTIFICIAL_2H_B",
     "nome": "Escolha Livre",
-    "creditos": 4.0,
+    "creditos": 2.0,
     "prerequisitos": [],
-    "tipo": "10º Período"
+    "tipo": "Escolha Livre"
+  },
+  {
+    "id": "ARTIFICIAL_2H_C",
+    "nome": "Escolha Livre",
+    "creditos": 2.0,
+    "prerequisitos": [],
+    "tipo": "Escolha Livre"
+  },
+  {
+    "id": "ARTIFICIAL_2H_D",
+    "nome": "Escolha Livre",
+    "creditos": 2.0,
+    "prerequisitos": [],
+    "tipo": "Escolha Livre"
   },
   {
     "id": "EEW002",
