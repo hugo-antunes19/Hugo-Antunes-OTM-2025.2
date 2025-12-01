@@ -6,10 +6,10 @@ Este projeto é uma aplicação web que ajuda estudantes a otimizar sua grade ho
 
 - **backend/**: Contém o código fonte do servidor e a lógica de otimização.
   - `main.py`: Arquivo principal da API (FastAPI).
-  - `optimizerMILP.py`: Lógica do modelo matemático de otimização.
+  - `optimizerSCIP.py`: Lógica do modelo matemático de otimização.
   - `data_loader.py`: Utilitários para carregar os dados das disciplinas.
   - `static/`: Arquivos frontend (HTML/CSS/JS).
-- **attempt1/**: Contém os dados (JSON) das disciplinas e ofertas.
+- **dados/**: Contém os dados (JSON) das disciplinas e ofertas.
 - **requirements.txt**: Lista de dependências do projeto.
 
 ## 🚀 Como Rodar o Projeto
@@ -86,4 +86,4 @@ O servidor iniciará em `http://127.0.0.1:8000`.
 ## 📝 Notas
 
 - O arquivo `main.py` está configurado para rodar no host `127.0.0.1` para garantir compatibilidade no Windows.
-- Certifique-se de que os arquivos de dados (`disciplinas.json` e `ofertas.json`) estejam na pasta `attempt1` conforme esperado pelo sistema.
+- Certifique-se de que os arquivos de dados (`disciplinas.json` e `ofertas.json`) estejam na pasta `dados` conforme esperado pelo sistema.
