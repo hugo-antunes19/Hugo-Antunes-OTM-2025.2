@@ -7,7 +7,6 @@ from typing import List, Dict, Any
 import sys
 import os
 
-# Add current directory to sys.path to ensure imports work
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from data_loader import carregar_dados
@@ -16,7 +15,6 @@ from ortools.linear_solver import pywraplp
 
 app = FastAPI()
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,8 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load data once at startup
-# Assuming json files are in ../dados relative to backend/
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '..', 'dados')
 DISCIPLINAS_PATH = os.path.join(DATA_DIR, 'disciplinas.json')
@@ -46,8 +42,6 @@ def get_disciplinas():
     if not dados_globais:
         raise HTTPException(status_code=500, detail="Data not loaded")
     
-    # Return list of disciplines for selection
-    # Format: {id: "Code", name: "Name", type: "Type"}
     lista = []
     for d_id, d_info in dados_globais["disciplinas"].items():
         lista.append({
@@ -63,7 +57,6 @@ def optimize_schedule(request: OptimizeRequest):
     if not dados_globais:
         raise HTTPException(status_code=500, detail="Data not loaded")
 
-    # Parameters
     NUM_SEMESTRES = 10
     CREDITOS_MAXIMOS_POR_SEMESTRE = 32
     CREDITOS_MINIMOS = {
