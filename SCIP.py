@@ -1,6 +1,6 @@
 # main3.py
 import time
-from ortools.linear_solver import pywraplp # <<< MUDANÇA AQUI
+from ortools.linear_solver import pywraplp
 from data_loader import carregar_dados
 from optimizerMILP import resolver_grade
 from visualizer import gerar_visualizacao_html, imprimir_grade_terminal
@@ -14,7 +14,7 @@ def main():
     NUM_SEMESTRES = 10
     CREDITOS_MAXIMOS_POR_SEMESTRE = 32
 
-    # --- NOVO: Definir os créditos mínimos para cada categoria ---
+    # --- Definir os créditos mínimos para cada categoria ---
     CREDITOS_MINIMOS = {
         "restrita": 4,
         "condicionada": 40,
