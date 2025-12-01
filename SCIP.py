@@ -31,7 +31,6 @@ def main():
         dados, CREDITOS_MINIMOS, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_SEMESTRE
     )
 
-    # --- MUDANÇA AQUI: Verificar os códigos de status do solver MILP ---
     if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
         print(f'\nSolução encontrada em {time.time() - start_time:.2f} segundos.')
         print(f'Número mínimo de semestres: {obj_value}')

@@ -11,7 +11,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from data_loader import carregar_dados
-from optimizerMILP import resolver_grade
+from optimizerSCIP import resolver_grade
 from ortools.linear_solver import pywraplp
 
 app = FastAPI()
@@ -81,7 +81,6 @@ def optimize_schedule(request: OptimizeRequest):
     )
 
     if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
-        # Format response
         formatted_grade = []
         for s, disciplinas_objs in grade.items():
             semestre_data = {
@@ -89,7 +88,6 @@ def optimize_schedule(request: OptimizeRequest):
                 "disciplinas": [],
                 "creditos": creditos[s]
             }
-            # disciplinas_objs is already a list of dicts
             semestre_data["disciplinas"] = disciplinas_objs
             formatted_grade.append(semestre_data)
             
@@ -107,7 +105,6 @@ def optimize_schedule(request: OptimizeRequest):
             "message": "No solution found."
         }
 
-# Mount static files
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 @app.get("/")

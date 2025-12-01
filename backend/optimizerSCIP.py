@@ -1,11 +1,10 @@
-# optimizerMILP.py
+# optimizerSCIP.py
 
 from ortools.linear_solver import pywraplp
 
 def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_SEMESTRE, disciplinas_cursadas=None):
     """
-    Cria e resolve o modelo de otimização da grade horária usando MILP.
-    (Com a lógica de pré-requisitos R4 correta)
+    Cria e resolve o modelo de otimização da grade horária usando SCIP.
     """
     if disciplinas_cursadas is None:
         disciplinas_cursadas = []
@@ -34,16 +33,13 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
     # --- 3. Variáveis de Decisão ---
     alocacao = {}
     
-    # Variáveis auxiliares para representar o estado (cursada/semestre) de TODAS as disciplinas
-    # Para facilitar as restrições, vamos criar dicionários que mapeiam d_id -> objeto (Var ou int)
     cursada_vars = {}
     semestre_da_disciplina = {}
 
     for d_id in disciplinas:
         if d_id in cursadas_set:
-            # Se já cursou, não aloca no futuro
             cursada_vars[d_id] = 1
-            semestre_da_disciplina[d_id] = 0 # Semestre "0" representa passado
+            semestre_da_disciplina[d_id] = 0
             continue
 
         # Se não cursou, cria variáveis de decisão
@@ -60,20 +56,18 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
         semestre_da_disciplina[d_id] = solver.IntVar(1, NUM_SEMESTRES + 1, f'semestre_{d_id}')
 
     # --- 4. Restrições ---
+    # R1: Cursar a disciplina apenas uma vez
 
     # R1.1: Obrigatórias (Exatamente uma vez)
     for d_id in obrigatorias_ids:
         if d_id in cursadas_set:
-            continue # Já satisfeita
+            continue
         vars_obrigatoria = [var for key, var in alocacao.items() if key[0] == d_id]
         solver.Add(solver.Sum(vars_obrigatoria) == 1)
 
     # R1.2: Optativas (No máximo uma vez)
     for d_id in ids_optativas:
         if d_id in cursadas_set:
-            # Se já cursou uma optativa, ela conta para os créditos, mas não precisa ser agendada de novo.
-            # A restrição de "no máximo uma vez" no futuro é trivialmente satisfeita (0 <= 1) se não criarmos vars.
-            # Mas se o usuário quiser repetir? Assumimos que não.
             continue
         vars_optativa = [var for key, var in alocacao.items() if key[0] == d_id]
         solver.Add(solver.Sum(vars_optativa) <= 1)
@@ -94,7 +88,6 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
         solver.Add(semestre_da_disciplina[d_id] == solver.Sum(termos_semestre) + (1 - cursada_var) * (NUM_SEMESTRES + 1))
 
     # R3: Créditos Mínimos (Linear)
-    # Aqui somamos as que já foram cursadas (valor 1) + as que serão (variável)
     if restritas_ids:
         solver.Add(solver.Sum(int(disciplinas[d_id]['creditos']) * cursada_vars[d_id] for d_id in restritas_ids) >= creditos_minimos['restrita'])
     if condicionadas_ids:
@@ -102,45 +95,27 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
     if livres_ids:
         solver.Add(solver.Sum(int(disciplinas[d_id]['creditos']) * cursada_vars[d_id] for d_id in livres_ids) >= creditos_minimos['livre'])
 
-    # --- R4: Pré-requisitos (CORRIGIDA DE ACORDO COM SUA REGRA) ---
+    # --- R4: Pré-requisitos ---
     M_prereq = NUM_SEMESTRES + 1 
 
     for d_id, disc_info in disciplinas.items():
-        # Se a disciplina já foi cursada, seus pré-requisitos já foram atendidos (assumimos consistência)
-        # Ou não precisamos verificar. Mas se quisermos validar, ok. 
-        # O foco é agendar as futuras.
         if d_id in cursadas_set:
             continue
 
         for prereq_id in disc_info.get('prerequisitos', []):
-            # Se o pré-requisito não existe no dataset (ex: código antigo), ignorar ou alertar
             if prereq_id not in disciplinas: 
                 continue
 
-            # Recupera as variáveis/constantes
             var_d = cursada_vars[d_id]
             var_pre = cursada_vars[prereq_id]
             
             sem_d = semestre_da_disciplina[d_id]
             sem_pre = semestre_da_disciplina[prereq_id]
 
-            # R4.1: REGRA DE IMPLICAÇÃO
-            # Se cursar 'd_id', TEM que cursar 'prereq_id'.
-            # (cursada[pre] >= cursada[d])
-            # Se prereq já cursado (1), 1 >= var_d (sempre verdade, pois var_d <= 1).
-            # Se ambos futuros, var_pre >= var_d.
             if isinstance(var_pre, int) and var_pre == 1:
-                pass # Prereq já feito, ok.
+                pass
             else:
                 solver.Add(var_pre >= var_d)
-
-            # R4.2: REGRA DE ORDENAÇÃO (Big-M)
-            # Se cursar 'd_id', o semestre de 'd_id' deve ser maior que o de 'prereq_id'.
-            # (semestre[d] - semestre[pre] >= 1 - M*(1-cursada[d]))
-            
-            # Se prereq já cursado, sem_pre = 0.
-            # semestre[d] - 0 >= 1 - M*(1-cursada[d])
-            # semestre[d] >= 1 - ...  (Verdade, pois semestre[d] >= 1 se cursada)
             
             solver.Add(sem_d - sem_pre >= 1 - M_prereq * (1 - var_d))
             
@@ -169,10 +144,9 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
         if termos_de_credito: 
             solver.Add(solver.Sum(termos_de_credito) <= CREDITOS_MAXIMOS_POR_SEMESTRE)
 
-    # R7: Regras Específicas (Estágio)
+    # R7: Regras Específicas (Estágio) -> Estágio apenas após metade das disciplinas totais concluídas
     id_estagio = "EEWU00"
     if id_estagio in semestre_da_disciplina and id_estagio not in cursadas_set:
-        # Nova Regra: Estágio apenas após metade das disciplinas totais concluídas
         total_disciplinas = len(disciplinas)
         metade_total = total_disciplinas / 2.0
         M_estagio = total_disciplinas + 1
@@ -180,22 +154,22 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
         for s in range(1, NUM_SEMESTRES + 1):
             # Variáveis de alocação do estágio neste semestre
             vars_estagio_s = [var for (d, sem, t), var in alocacao.items() if d == id_estagio and sem == s]
-            
+  
             if not vars_estagio_s:
                 continue
-            
+
             is_estagio_in_s = solver.Sum(vars_estagio_s)
-            
+
             # Contar disciplinas concluídas ANTES do semestre s
             # 1. Já cursadas
             count_cursadas_past = len(cursadas_set)
-            
+ 
             # 2. Cursadas nos semestres anteriores (1 até s-1)
             vars_concluidas_antes_s = []
             for d_other in disciplinas:
                 if d_other in cursadas_set: continue
                 if d_other == id_estagio: continue
-                
+
                 # Soma alocações de d_other em semestres < s
                 for sem_past in range(1, s):
                     for t_other in turmas_por_disciplina.get(d_other, []):
@@ -207,7 +181,7 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
             # Se estágio for em s, então total_concluidas >= metade
             solver.Add(total_concluidas_antes_s >= metade_total - M_estagio * (1 - is_estagio_in_s))
 
-    # --- 5. Função Objetivo (Corrigida) ---
+    # --- 5. Função Objetivo ---
     # Minimizar o semestre máximo de TODAS as disciplinas CURSADAS
     
     semestre_maximo = solver.IntVar(1, NUM_SEMESTRES, 'semestre_maximo')
@@ -216,7 +190,6 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
     for d_id in disciplinas:
         if d_id in cursadas_set: continue
 
-        # Forma linear: semestre_maximo >= semestre[d] - M * (1 - cursada[d])
         solver.Add(semestre_maximo >= semestre_da_disciplina[d_id] - M_obj * (1 - cursada_vars[d_id]))
 
     solver.Minimize(semestre_maximo)
