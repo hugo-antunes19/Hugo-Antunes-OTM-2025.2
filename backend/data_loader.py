@@ -11,7 +11,7 @@ def carregar_dados(caminho_disciplinas, caminho_ofertas):
     with open(caminho_ofertas, 'r', encoding='utf-8') as f:
         ofertas_data = json.load(f)
 
-    # --- MUDANÇA AQUI: Categorizar disciplinas antes de filtrar ---
+    # --- Categorizar disciplinas antes de filtrar ---
     obrigatorias_ids = []
     restritas_ids = []
     condicionadas_ids = []
@@ -26,8 +26,6 @@ def carregar_dados(caminho_disciplinas, caminho_ofertas):
             restritas_ids.append(d["id"])
         elif "Escolha Condicionada" in tipo:
             condicionadas_ids.append(d["id"])
-        # As disciplinas "ARTIFICIAL" que você criou caem aqui
-        # FIX: Check for "Livre" to catch "Escolha Livre"
         elif "Escolha Livre" in tipo or d["id"].startswith("ARTIFICIAL"):
             livres_ids.append(d["id"])
 
@@ -62,7 +60,7 @@ def carregar_dados(caminho_disciplinas, caminho_ofertas):
         "turmas_por_disciplina": turmas_por_disciplina,
         "horarios_por_turma": horarios_por_turma,
         "periodos_validos_por_disciplina": periodos_validos_por_disciplina,
-        # --- NOVO: Retorna as listas de IDs categorizados ---
+        # --- Retorna as listas de IDs categorizados ---
         "obrigatorias_ids": [d_id for d_id in obrigatorias_ids if d_id in disciplinas],
         "restritas_ids": [d_id for d_id in restritas_ids if d_id in disciplinas],
         "condicionadas_ids": [d_id for d_id in condicionadas_ids if d_id in disciplinas],
