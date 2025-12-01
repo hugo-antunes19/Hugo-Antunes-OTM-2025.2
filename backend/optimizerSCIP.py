@@ -144,12 +144,12 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
         if termos_de_credito: 
             solver.Add(solver.Sum(termos_de_credito) <= CREDITOS_MAXIMOS_POR_SEMESTRE)
 
-    # R7: Regras Específicas (Estágio) -> Estágio apenas após metade das disciplinas totais concluídas
+    # R7: Regras Específicas (Estágio) -> Estágio apenas após metade dos CRÉDITOS totais concluídos
     id_estagio = "EEWU00"
     if id_estagio in semestre_da_disciplina and id_estagio not in cursadas_set:
-        total_disciplinas = len(disciplinas)
-        metade_total = total_disciplinas / 2.0
-        M_estagio = total_disciplinas + 1
+        total_creditos = sum(int(d['creditos']) for d in disciplinas.values())
+        metade_creditos = total_creditos / 2.0
+        M_estagio = total_creditos + 1
 
         for s in range(1, NUM_SEMESTRES + 1):
             # Variáveis de alocação do estágio neste semestre
@@ -160,26 +160,28 @@ def resolver_grade(dados, creditos_minimos, NUM_SEMESTRES, CREDITOS_MAXIMOS_POR_
 
             is_estagio_in_s = solver.Sum(vars_estagio_s)
 
-            # Contar disciplinas concluídas ANTES do semestre s
+            # Contar CRÉDITOS concluídos ANTES do semestre s
             # 1. Já cursadas
-            count_cursadas_past = len(cursadas_set)
+            creditos_cursados_past = sum(int(disciplinas[d]['creditos']) for d in cursadas_set if d in disciplinas)
  
             # 2. Cursadas nos semestres anteriores (1 até s-1)
-            vars_concluidas_antes_s = []
+            vars_creditos_concluidos_antes_s = []
             for d_other in disciplinas:
                 if d_other in cursadas_set: continue
                 if d_other == id_estagio: continue
+                
+                cred = int(disciplinas[d_other]['creditos'])
 
                 # Soma alocações de d_other em semestres < s
                 for sem_past in range(1, s):
                     for t_other in turmas_por_disciplina.get(d_other, []):
                         if (d_other, sem_past, t_other) in alocacao:
-                            vars_concluidas_antes_s.append(alocacao[(d_other, sem_past, t_other)])
+                            vars_creditos_concluidos_antes_s.append(alocacao[(d_other, sem_past, t_other)] * cred)
             
-            total_concluidas_antes_s = count_cursadas_past + solver.Sum(vars_concluidas_antes_s)
+            total_creditos_concluidos_antes_s = creditos_cursados_past + solver.Sum(vars_creditos_concluidos_antes_s)
             
-            # Se estágio for em s, então total_concluidas >= metade
-            solver.Add(total_concluidas_antes_s >= metade_total - M_estagio * (1 - is_estagio_in_s))
+            # Se estágio for em s, então total_creditos_concluidos >= metade_creditos
+            solver.Add(total_creditos_concluidos_antes_s >= metade_creditos - M_estagio * (1 - is_estagio_in_s))
 
     # --- 5. Função Objetivo ---
     # Minimizar o semestre máximo de TODAS as disciplinas CURSADAS
