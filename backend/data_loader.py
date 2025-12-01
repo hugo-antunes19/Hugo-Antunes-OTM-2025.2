@@ -19,7 +19,6 @@ def carregar_dados(caminho_disciplinas, caminho_ofertas):
 
     for d in disciplinas_data:
         tipo = d.get("tipo", "")
-        # Considera disciplinas de Períodos e Estágio/TCC como obrigatórias
         if "Período" in tipo:
             obrigatorias_ids.append(d["id"])
         elif "Escolha Restrita" in tipo:
